@@ -58,7 +58,7 @@ legacy-archive/               旧方案源码和说明封存，不包含旧模�
 
 源码仓库提供网页和原生桥接。运行时请在本机准备以下内容。
 
-1. 将 Vocal2Midi 的 Windows 便携环境放在 `Vocal2Midi/`。将项目需要的原始声库放在 `audio/`，额外音效声库放在 `voicebanks/selected/`。保留各声库的 WAV、oto.ini 及已有的 FRQ 等文件。
+1. 将 Vocal2Midi 的 Windows 便携环境放在 `Vocal2Midi/`。网页使用的声库随源码提供，基础音效位于 `audio/`，其他音效位于 `voicebanks/selected/`。
 2. 安装 .NET 8 SDK。获取 OpenUtau 源码后构建原生桥接。
 
    ```powershell
