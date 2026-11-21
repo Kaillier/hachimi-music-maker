@@ -1,0 +1,3 @@
+# Keep bundled voicebank assets byte-for-byte intact on checkout.
+/audio/* -text
+/voicebanks/selected/* -text
