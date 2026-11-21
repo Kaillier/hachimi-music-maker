@@ -125,6 +125,36 @@ test('project history orders by creation time rather than directory name after r
   } finally { await h.close(); }
 });
 
+test('pure music submission creates a distinct project and participates in generation history and live logs', async () => {
+  const h = await setup(async task => {
+    assert.equal(task.kind, 'instrumental');
+    assert.equal(task.language, undefined);
+    assert.equal(task.lyrics, undefined);
+    assert.equal(task.onlineLyrics, false);
+    assert.equal(await readFile(task.input, 'utf8'), 'instrumental audio');
+    await writeFile(resolve(task.taskDir, 'task.log'), '专用转录日志\n');
+    await writeFile(resolve(task.projectDir, 'project.json'), JSON.stringify({ id: task.projectId }));
+    return { projectId: task.projectId };
+  });
+  try {
+    const form = new FormData();
+    form.append('song', new Blob(['instrumental audio']), '纯音乐.wav');
+    form.set('instrumental', 'true');
+    const started = await fetch(h.host + '/api/projects', { method: 'POST', body: form });
+    assert.equal(started.status, 202);
+    const job = await finish(h.host, (await started.json()).id);
+    assert.equal(job.status, 'completed');
+    assert.equal(job.kind, 'instrumental');
+    assert.match(job.projectId, /^instrumental-[a-f0-9-]+$/);
+    assert.deepEqual((await (await fetch(h.host + '/api/projects')).json()).songs, []);
+    assert.equal((await (await fetch(h.host + '/api/project-jobs')).json()).jobs[0].projectId, job.projectId);
+    const log = await (await fetch(h.host + '/api/project-jobs/' + job.id + '/log?offset=0')).json();
+    assert.equal(Buffer.from(log.chunk, 'base64').toString('utf8'), '专用转录日志\n');
+    h.restart();
+    assert.equal((await finish(h.host, job.id)).status, 'completed');
+  } finally { await h.close(); }
+});
+
 async function uploadFixture(host) {
   const form = new FormData();
   form.append('song', new Blob(['song-bytes']), '同名歌曲.mp3');

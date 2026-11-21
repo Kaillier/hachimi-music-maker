@@ -4,7 +4,7 @@
 - Preserve original songs, lyrics, user USTX exports, WAV recordings, FRQ sidecars, `oto.ini` and other voicebank sources.
 - For ha, ji and mi use only the original unnumbered recordings. Numbered variants are different sounds and were rejected.
 
-## Vocal Projects
+## Vocal and Instrumental Projects
 
 The website has exactly one vocal USTX project-generation path:
 
@@ -12,6 +12,8 @@ The website has exactly one vocal USTX project-generation path:
 2. Separate vocals and accompaniment with the installed Demucs environment.
 3. Use LDDC to read or find plain reference lyrics where available. Use original text only; never apply LDDC timestamps or send audio to lyrics providers. Invoke the installed `Vocal2Midi/scripts/auto_lyric_cli.py` on the separated vocals, with USTX output and its pitch curve enabled. When available, give Vocal2Midi the text through its native `--lyrics-file` option; otherwise use its ASR. Do not reimplement its transcription, alignment or pitch processing.
 4. Index the resulting USTX for the editor without changing notes or timing.
+
+For an explicitly selected instrumental upload, create a typed MIDI project under `projects/instrumental-<uuid>/`. Use local MuScriptor to produce instrument tracks and leave the track assignments unselected. Let the user choose a track or silence per time range. Export the chosen MIDI events with source note timings and tempo preserved. Instrumental projects use this separate editor and do not enter the vocal USTX catalog.
 
 Do not restore the former custom GAME/ROSVOT/FCPE analysis, LDDC timing grouping, beat snapping, generated pitch CSVs or browser audio synthesis. Old mode parameters are rejected by the API. The archive is historical source only and must not be imported by active code. GAME and RMVPE models *inside Vocal2Midi* remain necessary dependencies of Vocal2Midi, not a second website pipeline.
 

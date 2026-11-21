@@ -22,12 +22,13 @@ Vocal2Midi/python/python.exe -m pip install --target backend/runtime/lddc-python
 
 编排区按原句分组显示所有现用音效，旧别名仅用于还原草稿。选择「仅试听」后，点按音效会播放原始样本。选择「编排」后，点按音效会替换选中格并选中下一格。工程顶部的循环音效组决定「整首循环生成」和数字键所用的音效。音频工具的 USTX 样板也可以选择音效组。
 
+在「生成工程」勾选「纯音乐」后，本机 MuScriptor 转录乐器音轨，再打开主旋律工程。初始为一个待选时间段。可以切分和调整分界，试听同一时间段的原曲和音轨，分别指定每段采用哪条音轨或留白。保存后从生成记录重新打开即可接着编辑。导出按音符起音决定它所属的时间段，保留时序、延音和和弦。
 
 音效组定义在 `sound-packs.json`。新增音效使用 `voicebanks/selected/` 的 WAV、FRQ 和 `oto.ini`，任务运行时把所需文件复制到自己的声库目录。需要从本机素材重建时，先构建 OpenUtau 原生 worker，再运行 `Vocal2Midi/python/python.exe -X utf8 backend/pipeline/prepare_phrase_voicebank.py`。
 
 ## 当前接口
 
-- `POST /api/projects`：歌曲文件 `song`。普通歌曲可选 `language`（默认 `zh`）、`lyrics`（LRC/TXT，1 MB 以内）、`onlineLyrics=false`（不联网找歌词）。
+- `POST /api/projects`：歌曲文件 `song`。普通歌曲可选 `language`（默认 `zh`）、`lyrics`（LRC/TXT，1 MB 以内）、`onlineLyrics=false`（不联网找歌词）。`instrumental=true` 创建主旋律工程。
 - `GET /api/project-jobs`、`GET /api/project-jobs/<id>`：持久化生成记录与阶段状态。`.../files/log` 返回完整 UTF-8 日志。
 - `GET /api/projects`：只列出 `projects/v2m-*/project.json` 中已完成的 Vocal2Midi 工程。不会加载旧静态音频包。
 - `GET /api/projects/<id>`：页面、发音单位、波形和源工程哈希。
@@ -38,6 +39,7 @@ Vocal2Midi/python/python.exe -m pip install --target backend/runtime/lddc-python
 - 分段试听、整首试听和导出的渲染结果保存在本机任务目录。相同工程、音效顺序、音量和播放范围会复用已完成的结果。刷新页面或重启服务后仍能复用，文件没有自动过期时间。
 - `GET /api/render/<id>`、`.../files/wav|ustx|report|log`：渲染状态与产物。
 - `/api/audio-tools`：独立分轨、手动 USTX 样板及任务历史。
+- `GET /api/instrumental-projects/<id>` 获取主旋律工程。该地址下的 `PATCH /selection` 保存分段音轨选择，`POST /export` 导出主旋律。
 
 渲染请求包含 `songId`、`fingerprint`、`sequences`、`confirmed`、`backingGain`、`soundGain`。预览额外包含 `phraseIndex`。旧模式字段会被拒绝，绝不静默采用其他路线。
 

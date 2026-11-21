@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f5f4">
+  <title>主旋律工程 | Hachimi</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/instrumental-project.css">
+</head>
+<body class="melody-page">
+  <header class="topbar">
+    <a class="brand" href="/"><i data-lucide="audio-lines" aria-hidden="true"></i> HACHIMI</a>
+    <nav class="page-nav" aria-label="页面">
+      <a href="/generate"><i data-lucide="file-plus-2" aria-hidden="true"></i>生成工程</a>
+      <a href="/arrange"><i data-lucide="list-music" aria-hidden="true"></i>歌词编排</a>
+    </nav>
+  </header>
+  <main class="melody-editor">
+    <div class="melody-heading">
+      <div>
+        <h1 id="melody-title">主旋律工程</h1>
+        <p id="melody-summary" class="muted" role="status">正在载入工程…</p>
+      </div>
+      <div id="melody-actions" class="melody-actions" hidden>
+        <button id="melody-save" type="button">保存工程</button>
+        <button id="melody-export" type="button" class="primary">导出主旋律</button>
+      </div>
+    </div>
+    <p id="melody-error" class="error" role="alert" hidden></p>
+    <button id="melody-retry" type="button" hidden>重新载入</button>
+    <div id="melody-workbench" hidden>
+      <section class="melody-sheet melody-timeline" aria-labelledby="melody-timeline-title">
+        <div class="melody-section-heading">
+          <h2 id="melody-timeline-title">时间轴</h2>
+          <output id="melody-position" class="melody-clock"></output>
+        </div>
+        <div id="melody-strip" class="melody-strip" aria-hidden="true"></div>
+        <input id="melody-playhead" type="range" value="0" min="0" step="0.001" aria-label="定位播放头">
+        <div id="melody-ruler" class="time-ruler" aria-hidden="true"></div>
+        <div class="melody-transport">
+          <button id="melody-play-original" type="button">播放原曲</button>
+          <form id="melody-split-form" class="melody-split-form">
+            <label for="melody-split-time">分段时间（秒）</label>
+            <input id="melody-split-time" type="number" min="0" step="any" inputmode="decimal" required>
+            <button id="melody-split" type="submit">在此分段</button>
+          </form>
+        </div>
+      </section>
+      <div class="melody-sheet melody-workspace">
+        <section class="melody-segments" aria-labelledby="melody-segments-title">
+          <div class="melody-section-heading">
+            <h2 id="melody-segments-title">主旋律分段</h2>
+            <span id="melody-count"></span>
+          </div>
+          <ol id="melody-segment-list" class="melody-segment-list"></ol>
+        </section>
+        <section class="melody-detail" aria-labelledby="melody-detail-title">
+          <div class="melody-section-heading melody-detail-heading">
+            <h2 id="melody-detail-title">本段主旋律</h2>
+            <button id="melody-play-segment" type="button">试听本段原曲</button>
+          </div>
+          <form id="melody-boundary-form" class="melody-boundary-form">
+            <label>起点（秒）<input id="melody-boundary-start" type="number" min="0" step="any" inputmode="decimal" required></label>
+            <label>终点（秒）<input id="melody-boundary-end" type="number" min="0" step="any" inputmode="decimal" required></label>
+            <button id="melody-boundary-update" type="submit">调整边界</button>
+            <button id="melody-merge" type="button">与上一段合并</button>
+          </form>
+          <fieldset id="melody-track-picker" class="melody-track-picker">
+            <legend>选用音轨</legend>
+            <ul id="melody-track-list" class="melody-track-list"></ul>
+          </fieldset>
+          <p class="muted melody-note">音轨试听使用 MIDI 合成音。导出按音符起点分段，尾音保留原来的长度。</p>
+        </section>
+      </div>
+      <div class="melody-footer">
+        <p id="melody-save-status" class="muted" role="status"></p>
+        <div id="melody-export-links" class="melody-export-links" hidden>
+          <button id="melody-play-result" type="button" hidden>试听整首主旋律</button>
+          <a id="melody-midi-link" download>下载 MIDI</a>
+          <a id="melody-wav-link" download hidden>下载 WAV</a>
+        </div>
+      </div>
+      <audio id="melody-audio" preload="none" hidden></audio>
+    </div>
+  </main>
+  <script src="/vendor/lucide.js"></script>
+  <script type="module" src="/instrumental-project.js"></script>
+</body>
+</html>

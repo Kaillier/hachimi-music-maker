@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 const isActive = job => ['queued', 'running'].includes(job.status);
-const projectLink = job => '/arrange?song=' + encodeURIComponent(job.projectId);
+const projectLink = job => (job.kind === 'instrumental' ? '/instrumental' : '/arrange') + '?song=' + encodeURIComponent(job.projectId);
 const statusLabels = { queued: '排队中', running: '处理中', completed: '已完成', failed: '失败' };
 const timestamp = new Intl.DateTimeFormat('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 const rows = new Map();
@@ -33,6 +33,9 @@ function showDeleteError(message = '') {
 function confirmDeletion(job) {
   deleteTarget = job.projectId;
   $('delete-project-name').textContent = job.title;
+  $('delete-project-details').textContent = job.kind === 'instrumental'
+    ? '本机的工程目录及其中的音轨、分段和导出文件将被删除，无法恢复。工程目录外的原始文件和已下载的文件会保留。'
+    : '本机的工程目录及其中的分轨、USTX 等文件将被删除，无法恢复。工程目录外的原始文件和已下载的文件会保留。';
   const time = $('delete-project-time');
   const date = new Date(job.createdAt);
   time.dateTime = job.createdAt || '';
@@ -73,6 +76,7 @@ function renderHistory(jobs) {
     const canDelete = job.status === 'completed' && Boolean(job.projectId);
     if (canDelete) {
       open.href = projectLink(job);
+      open.textContent = job.kind === 'instrumental' ? '打开主旋律工程' : '打开编排';
     }
     open.hidden = !canDelete;
     const deleteButton = row.querySelector('.project-delete');
@@ -95,7 +99,7 @@ async function refreshHistory() {
     const submitted = jobs.find(job => job.id === submittedId);
     if (submitted?.status === 'completed') {
       submittedId = null;
-      progress('工程已生成，正在打开编排…');
+      progress(submitted.kind === 'instrumental' ? '工程已生成，正在打开主旋律工程…' : '工程已生成，正在打开编排…');
       location.assign(projectLink(submitted));
       return;
     }
@@ -116,12 +120,26 @@ async function refreshHistory() {
   if (activeJob || submittedId) timer = setTimeout(refreshHistory, 1500);
 }
 
+function updateImportMode() {
+  const instrumental = $('upload-instrumental').checked;
+  $('vocal-import-fields').hidden = instrumental;
+  $('vocal-import-fields').disabled = instrumental;
+  $('instrumental-import-help').hidden = !instrumental;
+}
+
+$('upload-instrumental').addEventListener('change', updateImportMode);
 $('project-form').addEventListener('submit', async event => {
   event.preventDefault();
   if (submitting || activeJob || submittedId) return;
   const form = new FormData(event.currentTarget);
-  if (!form.get('lyrics')?.name) form.delete('lyrics');
-  form.set('onlineLyrics', String($('upload-online-lyrics').checked));
+  if ($('upload-instrumental').checked) {
+    form.delete('language');
+    form.delete('lyrics');
+    form.delete('onlineLyrics');
+  } else {
+    if (!form.get('lyrics')?.name) form.delete('lyrics');
+    form.set('onlineLyrics', String($('upload-online-lyrics').checked));
+  }
   submitting = true;
   $('import-fields').disabled = true;
   errorMessage();
@@ -164,5 +182,6 @@ $('delete-project-form').addEventListener('submit', async event => {
 });
 
 window.lucide?.createIcons();
-window.addEventListener('pageshow', event => { if (event.persisted) refreshHistory(); });
+window.addEventListener('pageshow', event => { updateImportMode(); if (event.persisted) refreshHistory(); });
+updateImportMode();
 refreshHistory();

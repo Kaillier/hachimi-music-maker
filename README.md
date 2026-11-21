@@ -21,6 +21,7 @@ node website/serve.mjs 4175
 - 在工程顶部选择“循环音效组”，点击“整首循环生成”，用所选音效组替换整首编排并导出 WAV。
 - “导入歌曲”窗口保留生成记录与完整任务日志；刷新网页不会丢失后端任务。
 - “音频工具”保留独立人声分离和手动 USTX 样板生成。
+- 纯音乐在「生成工程」里勾选「纯音乐」。生成后在主旋律工程里试听原曲和各音轨，按时间切分并指定每段的主旋律或留白。
 
 所有处理均在本机进行。这里的“上传”仅发送到 `127.0.0.1` 本地服务，不上传到外部平台。
 
@@ -72,6 +73,10 @@ legacy-archive/               旧方案源码和说明封存，不包含旧模�
 网站依赖 Node.js、Vocal2Midi 的 Windows 便携环境、Windows .NET 8 / WORLDLINE-R，以及已配置的 Windows Demucs。中文转写使用 Vocal2Midi 当前保存的 Qwen/TiFA/GAME/RMVPE 设置，需要 DirectML 可用。其他语言是否可用取决于已安装的 Vocal2Midi 语言依赖。
 
 分轨默认用 `backend/runtime/demucs/venv/Scripts/python.exe` 和 `backend/runtime/demucs/huggingface`，可通过 `HACHIMI_DEMUCS_PYTHON` 和 `HACHIMI_DEMUCS_CACHE` 指定位置。模型下载在首次配置时完成，歌曲分轨时读取本机缓存。
+
+纯音乐工程使用 Windows 上的 MuScriptor。完成 Demucs 环境配置后运行 `setup_muscriptor.bat`，将本机已有的 MuScriptor `model.safetensors` 和它的 `config.json` 放在项目根目录。可用 `HACHIMI_MUSCRIPTOR_MODEL` 指定其他位置的模型权重。
+
+每段可选一条乐器音轨或留白。导出按原曲时间取所选音轨中在该段起音的音符。跨过分界的延音保留原长度，和弦也会保留。
 
 ```powershell
 node --test website/tests/*.test.mjs

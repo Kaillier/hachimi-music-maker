@@ -7,9 +7,11 @@ import { DEFAULT_SOUND_PACK, KEEP_ORIGINAL, SOUND_IDS } from './audio-core.js';
 import { runProcess } from './local-process.mjs';
 import { sendFile } from './file-response.mjs';
 import { separateAudio } from './separate-audio.mjs';
+import { createInstrumentalProject } from './instrumental-project-service.mjs';
 
 const active = job => ['queued', 'running'].includes(job.status);
-const generation = job => job?.kind === 'project';
+const generation = job => job?.kind === 'project' || job?.kind === 'instrumental';
+const generationMessages = { project: '歌曲工程已生成', instrumental: '主旋律工程已生成，请分段选择音轨' };
 const markDeleted = task => Object.assign(task, { status: 'deleted', message: '工程已删除' });
 const json = (res, code, body) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(body)); };
 const lyricSources = { uploaded: '上传歌词', 'lddc-local': 'LDDC 本地歌词', 'lddc-online': 'LDDC 在线歌词', asr: '自动识别歌词' };
@@ -94,6 +96,7 @@ export function renderSelection(project, body, preview) {
 }
 
 export async function nativeProjectRunner(task, update, root) {
+  if (task.kind === 'instrumental') return createInstrumentalProject(task, update, root);
   const log = resolve(task.taskDir, 'task.log');
   const python = process.env.HACHIMI_AUDIO_PYTHON || resolve(root, 'Vocal2Midi/python/python.exe');
   const run = (exe, args, cwd = root, options) => runProcess(exe, args, cwd, log, update, options);
@@ -157,7 +160,7 @@ export async function nativeProjectRunner(task, update, root) {
   return { files: { wav: task.kind === 'preview' ? report.preview : report.mix, ustx: report.project, report: resolve(task.taskDir, 'output/report.json') } };
 }
 
-export function createProjectService({ projectRoot: root, externalBusy = () => false, runner = nativeProjectRunner }) {
+export function createProjectService({ projectRoot: root, externalBusy = () => false, runner = nativeProjectRunner, removeInstrumentalProject }) {
   const storage = resolve(root, 'backend/runtime/web-server/v2m-jobs');
   const tasks = new Map();
   const completedRenders = new Map();
@@ -199,10 +202,12 @@ export function createProjectService({ projectRoot: root, externalBusy = () => f
       if (!dir.isDirectory()) continue;
       try {
         const task = JSON.parse(await readFile(resolve(storage, dir.name, 'task.json'), 'utf8'));
-        if (!['project', 'preview', 'render'].includes(task.kind)) continue;
         if (active(task)) { task.status = 'failed'; task.error = '服务已重启，请重新提交'; await persist(task); }
         if (generation(task) && task.status === 'completed' && task.projectId) {
-          try { await readProject(root, task.projectId); }
+          try {
+            if (task.kind === 'project') await readProject(root, task.projectId);
+            else await stat(workspaceFile(root, resolve(root, 'projects', task.projectId, 'project.json')));
+          }
           catch (error) { if (error.code === 'ENOENT') markDeleted(task); }
         }
         tasks.set(task.id, task);
@@ -221,7 +226,7 @@ export function createProjectService({ projectRoot: root, externalBusy = () => f
     try {
       await persist(task);
       result = await runner(task, message => { task.message = message; }, root);
-      result = { ...result, status: 'completed', message: generation(task) ? '歌曲工程已生成' : 'OpenUtau 渲染完成' };
+      result = { ...result, status: 'completed', message: generationMessages[task.kind] || 'OpenUtau 渲染完成' };
     } catch (error) { result = { status: 'failed', error: error.message }; }
     const finished = { ...task, ...result, finishedAt: new Date().toISOString() };
     try { await persist(finished); }
@@ -247,23 +252,25 @@ export function createProjectService({ projectRoot: root, externalBusy = () => f
       const song = parts.get('song');
       const filename = safeFileName(song?.filename || '', 'song.wav');
       if (!song?.data.length || !AUDIO_EXTENSIONS.has(extname(filename).toLowerCase())) throw new Error('请选择支持的歌曲音频文件');
-      if (parts.has('instrumental')) throw new Error('当前版本只支持人声歌曲工程');
-      const language = parts.get('language')?.data.toString('utf8') || 'zh';
-      if (!['zh', 'en', 'ja', 'yue'].includes(language)) throw new Error('不支持的歌曲语言');
-      const lyricPart = parts.get('lyrics');
+      const instrumentalFlag = parts.get('instrumental')?.data.toString('utf8') ?? 'false';
+      if (!['true', 'false'].includes(instrumentalFlag)) throw new Error('纯音乐选项无效');
+      const instrumental = instrumentalFlag === 'true';
+      const language = instrumental ? undefined : parts.get('language')?.data.toString('utf8') || 'zh';
+      if (!instrumental && !['zh', 'en', 'ja', 'yue'].includes(language)) throw new Error('不支持的歌曲语言');
+      const lyricPart = instrumental ? undefined : parts.get('lyrics');
       const lyricExtension = extname(lyricPart?.filename || '').toLowerCase();
       if (lyricPart && (!['.lrc', '.txt'].includes(lyricExtension) || !lyricPart.data.length || lyricPart.data.length > 1024 * 1024))
         throw new Error('参考歌词须为不超过 1 MB 的 LRC 或 UTF-8 TXT 文件');
-      const onlineLyrics = parts.get('onlineLyrics')?.data.toString('utf8') !== 'false';
+      const onlineLyrics = !instrumental && parts.get('onlineLyrics')?.data.toString('utf8') !== 'false';
       const id = randomUUID();
-      const projectId = 'v2m-' + id;
+      const projectId = (instrumental ? 'instrumental-' : 'v2m-') + id;
       const projectDir = resolve(root, 'projects', projectId);
       await mkdir(resolve(projectDir, 'input'), { recursive: true });
       const input = resolve(projectDir, 'input/song' + extname(filename).toLowerCase());
       await writeFile(input, song.data);
       const lyrics = lyricPart ? resolve(projectDir, 'input/lyrics' + lyricExtension) : undefined;
       if (lyrics) await writeFile(lyrics, lyricPart.data);
-      return await accept({ id, kind: 'project', projectId, projectDir, input, lyrics, onlineLyrics, language, title: basename(filename, extname(filename)),
+      return await accept({ id, kind: instrumental ? 'instrumental' : 'project', projectId, projectDir, input, lyrics, onlineLyrics, language, title: basename(filename, extname(filename)),
         taskDir: resolve(storage, id), status: 'queued', createdAt: new Date().toISOString() });
     } finally { accepting = false; }
   }
@@ -296,7 +303,8 @@ export function createProjectService({ projectRoot: root, externalBusy = () => f
     if (busy() || externalBusy()) throw new Error('已有本地任务正在处理，请等待完成后再删除工程');
     accepting = true;
     try {
-      await removeProject(root, id);
+      if (id.startsWith('instrumental-') && removeInstrumentalProject) await removeInstrumentalProject(id);
+      else await removeProject(root, id);
       for (const task of tasks.values()) {
         if (generation(task) && task.projectId === id) markDeleted(task);
       }
@@ -321,6 +329,7 @@ export function createProjectService({ projectRoot: root, externalBusy = () => f
         json(res, 200, { jobs: history.map(publicTask) });
       } else {
         const match = /^\/api\/projects\/(v2m-[a-z0-9-]+)(?:\/files\/(\w+))?$/.exec(pathname);
+        const instrumentalMatch = /^\/api\/projects\/(instrumental-[a-f0-9-]+)$/.exec(pathname);
         const logMatch = /^\/api\/project-jobs\/([a-f0-9-]+)\/log$/.exec(pathname);
         const jobMatch = /^\/api\/(?:project-jobs|render)\/([a-f0-9-]+)(?:\/files\/(wav|ustx|report|log))?$/.exec(pathname);
         if (logMatch && req.method === 'GET') {
@@ -335,6 +344,8 @@ export function createProjectService({ projectRoot: root, externalBusy = () => f
           }
         } else if (match && !match[2] && req.method === 'DELETE') {
           json(res, 200, await remove(match[1]));
+        } else if (instrumentalMatch && req.method === 'DELETE') {
+          json(res, 200, await remove(instrumentalMatch[1]));
         } else if (match && ['GET', 'HEAD'].includes(req.method)) {
           const project = await readProject(root, match[1]);
           const kind = match[2];

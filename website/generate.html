@@ -26,9 +26,13 @@
         <fieldset id="import-fields">
           <legend>导入歌曲</legend>
           <label class="file-picker">歌曲文件<input id="upload-song" name="song" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.wma" required></label>
-          <label class="file-picker">演唱语言<select id="upload-language" name="language"><option value="zh">中文</option><option value="en">英文</option><option value="ja">日文</option><option value="yue">粤语</option></select></label>
-          <label class="file-picker">参考歌词（可选）<input id="upload-lyrics" name="lyrics" type="file" accept=".lrc,.txt"></label>
-          <label class="lyrics-lookup"><input id="upload-online-lyrics" name="onlineLyrics" type="checkbox" checked>本地没有歌词时，允许 LDDC 联网查找</label>
+          <label class="lyrics-lookup"><input id="upload-instrumental" name="instrumental" type="checkbox" value="true">纯音乐</label>
+          <fieldset id="vocal-import-fields">
+            <label class="file-picker">演唱语言<select id="upload-language" name="language"><option value="zh">中文</option><option value="en">英文</option><option value="ja">日文</option><option value="yue">粤语</option></select></label>
+            <label class="file-picker">参考歌词（可选）<input id="upload-lyrics" name="lyrics" type="file" accept=".lrc,.txt"></label>
+            <label class="lyrics-lookup"><input id="upload-online-lyrics" name="onlineLyrics" type="checkbox" checked>本地没有歌词时，允许 LDDC 联网查找</label>
+          </fieldset>
+          <p id="instrumental-import-help" class="muted" hidden>生成后可试听各音轨，并为不同时间段指定主旋律。</p>
           <button id="upload-submit" class="primary" type="submit"><i data-lucide="wand-sparkles"></i>生成工程</button>
         </fieldset>
         <output id="upload-status" class="muted" role="status" aria-live="polite"></output>

@@ -98,6 +98,49 @@ test('separation upload persists inputs and exposes ranged audio and downloads a
   } finally { await h.close(); }
 });
 
+test('instrumental transcription exposes each selectable track with its own MIDI and preview after restart', async () => {
+  const h = await setup(async task => {
+    assert.equal(task.kind, 'instrumental');
+    assert.equal(await readFile(task.input, 'utf8'), 'original instrumental piece');
+    const directory = resolve(task.outputDir, 'tracks');
+    await mkdir(directory, { recursive: true });
+    const tracks = [
+      { id: 'track-5', label: '钢琴', noteCount: 8, midi: 'track-5.mid', preview: 'track-5.wav' },
+      { id: 'track-2', label: '长笛', noteCount: 25, midi: 'track-2.mid', preview: 'track-2.wav' },
+    ];
+    for (const track of tracks) {
+      await writeFile(resolve(directory, track.midi), 'MThd-' + track.id);
+      await writeFile(resolve(directory, track.preview), 'RIFF-' + track.id);
+    }
+    return { duration: 4, tracks };
+  });
+  try {
+    const path = '/api/audio-tools/instrumental';
+    assert.equal((await post(h.host, path, upload('song', 'not-audio.ustx'))).status, 400);
+    const start = await post(h.host, path, upload('song', '纯音乐.mp3', 'original instrumental piece'));
+    assert.equal(start.status, 202);
+    const task = await finished(h.host, start.data.id);
+    assert.equal(task.status, 'completed');
+    assert.deepEqual(task.tracks.map(({ id, label, noteCount }) => [id, label, noteCount]),
+      [['track-5', '钢琴', 8], ['track-2', '长笛', 25]]);
+    assert.ok(!Object.hasOwn(task, 'selectedTrack'));
+    const selected = task.tracks[1];
+    const audio = await fetch(h.host + selected.previewUrl, { headers: { Range: 'bytes=0-3' } });
+    assert.equal(audio.status, 206);
+    assert.equal(await audio.text(), 'RIFF');
+    const midi = await fetch(h.host + selected.midiUrl);
+    assert.equal(midi.headers.get('content-type'), 'audio/midi');
+    assert.match(decodeURIComponent(midi.headers.get('content-disposition')), /纯音乐-长笛\.mid/);
+    assert.equal(await midi.text(), 'MThd-track-2');
+    assert.equal((await fetch(h.host + selected.previewUrl.replace('track-2', 'track-99'))).status, 404);
+    h.restart();
+    const list = await (await fetch(h.host + '/api/audio-tools')).json();
+    assert.deepEqual(list.tasks[0].tracks, task.tracks);
+    assert.equal((await fetch(h.host + selected.previewUrl, { method: 'HEAD' })).status, 200);
+    assert.deepEqual(list.sources, []);
+  } finally { await h.close(); }
+});
+
 test('USTX rendering selects a completed separation without regenerating analysis', async () => {
   const calls = [];
   const h = await setup(async task => { calls.push({ kind: task.kind, backing: task.backing }); return fakeRunner(task); });

@@ -69,6 +69,100 @@ function audioRow(container, task, file) {
   container.append(audio);
 }
 
+function instrumentalTracks(container, task) {
+  if (!task.tracks?.length) return;
+  const tracks = document.createElement('fieldset');
+  tracks.className = 'instrumental-tracks';
+  const legend = document.createElement('legend');
+  legend.textContent = '选择主旋律音轨';
+  tracks.append(legend);
+
+  const audio = document.createElement('audio');
+  audio.controls = true;
+  audio.preload = 'none';
+  audio.hidden = true;
+  exclusivePlayer(audio);
+  let previewTrack = null;
+  let selectedTrack = null;
+  const choiceKey = 'hachimi.instrumental-track.' + task.id;
+  let savedTrack;
+  try { savedTrack = sessionStorage.getItem(choiceKey); } catch { /* Playback and downloads also work without storage. */ }
+  const previewButtons = [];
+  const updatePreviewButtons = () => {
+    for (const { track, button } of previewButtons) {
+      const action = previewTrack === track && !audio.paused ? '暂停' : '试听';
+      button.textContent = action;
+      button.setAttribute('aria-label', action + ' ' + track.label);
+    }
+  };
+  for (const event of ['play', 'pause', 'ended', 'error']) audio.addEventListener(event, updatePreviewButtons);
+
+  const download = document.createElement('button');
+  download.type = 'button';
+  download.className = 'primary';
+  download.textContent = '下载所选 MIDI';
+  download.disabled = true;
+  const link = document.createElement('a');
+  link.hidden = true;
+  link.download = '';
+  download.addEventListener('click', () => {
+    if (!selectedTrack) return;
+    link.href = selectedTrack.midiUrl;
+    link.click();
+  });
+
+  for (const track of task.tracks) {
+    const row = document.createElement('div');
+    row.className = 'instrumental-track';
+    const label = document.createElement('label');
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'main-melody-' + task.id;
+    radio.value = track.id;
+    radio.checked = radio.value === savedTrack;
+    if (radio.checked) {
+      selectedTrack = track;
+      download.disabled = false;
+    }
+    const name = document.createElement('span');
+    name.textContent = track.label;
+    const count = document.createElement('small');
+    count.textContent = track.noteCount.toLocaleString('zh-CN') + ' 个音符';
+    label.append(radio, name, count);
+    radio.addEventListener('change', () => {
+      if (!radio.checked) return;
+      selectedTrack = track;
+      download.disabled = false;
+      try { sessionStorage.setItem(choiceKey, radio.value); } catch { /* Keep the in-memory choice. */ }
+    });
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    previewButtons.push({ track, button });
+    button.addEventListener('click', () => {
+      if (previewTrack === track && !audio.paused) {
+        audio.pause();
+        return;
+      }
+      if (previewTrack !== track) {
+        previewTrack = track;
+        audio.src = track.previewUrl;
+        audio.setAttribute('aria-label', task.title + ' · ' + track.label + '试听');
+      }
+      audio.hidden = false;
+      audio.play().catch(error => { if (error.name !== 'AbortError') showError(error); });
+    });
+    row.append(label, button);
+    tracks.append(row);
+  }
+  updatePreviewButtons();
+  const actions = document.createElement('div');
+  actions.className = 'dialog-actions instrumental-track-actions';
+  actions.append(download, link);
+  tracks.append(audio, actions);
+  container.append(tracks);
+}
+
 function renderTasks() {
   const list = $('audio-task-list');
   const tasks = [...state.tasks.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 12);
@@ -98,10 +192,16 @@ function renderTasks() {
     else if (task.status !== 'completed') info.textContent = task.message;
     else if (task.kind === 'ustx') {
       info.textContent = `${task.soundPack || DEFAULT_SOUND_PACK.label} · ${task.syllables} 个发音单位 · ${task.sustainNotes} 个延音`;
+    } else if (task.kind === 'instrumental') {
+      info.textContent = task.tracks?.length ? '轨道按识别的乐器归组，可能含有和弦。试听使用 MIDI 合成音。' : '没有识别到带有音高的音轨。';
     } else info.textContent = '人声与伴奏';
     if (task.status === 'failed') info.className = 'audio-task-error';
     item.append(info);
     if (task.status !== 'completed') continue;
+    if (task.kind === 'instrumental') {
+      instrumentalTracks(item, task);
+      continue;
+    }
     for (const file of task.files) if (task.kind === 'separation' ? ['vocals', 'backing'].includes(file.kind) : file.kind === 'mix') audioRow(item, task, file);
     const links = document.createElement('div'); links.className = 'audio-task-links';
     for (const file of task.files.filter(file => ['vocals', 'backing', 'mix', 'score'].includes(file.kind))) {
