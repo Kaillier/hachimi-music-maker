@@ -3,6 +3,7 @@ import catalogue from './sound-packs.json' with { type: 'json' };
 export const LABELS = catalogue.labels;
 export const SOUND_SOURCE_ALIASES = catalogue.sourceAliases;
 export const SOUND_IDS = Object.keys(LABELS);
+const draftAliasReplacements = new Map(Object.entries(catalogue.draftAliasReplacements));
 export const SOUND_PACKS = catalogue.packs;
 export const DEFAULT_SOUND_PACK = SOUND_PACKS.find(pack => pack.id === catalogue.defaultPack);
 export const SAMPLE_RATE = 44100;
@@ -31,7 +32,10 @@ export function restoreDraft(project, value) {
     }
     const saved = value.sequences?.[index];
     if (Array.isArray(saved) && saved.length === page.units.length) {
-      draft.sequences[index] = saved.map(sound => SOUND_IDS.includes(sound) ? sound : null);
+      draft.sequences[index] = saved.map(sound => {
+        const alias = draftAliasReplacements.get(sound) ?? sound;
+        return SOUND_IDS.includes(alias) ? alias : null;
+      });
       draft.confirmed[index] = value.confirmed?.[index] === true &&
         draft.sequences[index].every((sound, slot) => draft.phraseEdits[index]?.kept[slot] || SOUND_IDS.includes(sound));
     }

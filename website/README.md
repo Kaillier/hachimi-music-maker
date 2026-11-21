@@ -20,7 +20,7 @@ Vocal2Midi/python/python.exe -m pip install --target backend/runtime/lddc-python
 
 这两个运行目录不提交到 Git，也不修改 Vocal2Midi 自带的包或 LDDC 桌面程序。网页默认让 LDDC 子进程直连，避免和桌面版遇到同样的代理问题；设置 `HACHIMI_LDDC_USE_PROXY=1` 可继承系统代理环境变量。歌词来源及查询错误记录在工程元数据和任务日志中。
 
-编排区按原句分组显示所有现用音效，旧别名仅用于还原草稿。选择「仅试听」后，点按音效会播放原始样本。选择「编排」后，点按音效会替换选中格并选中下一格。工程顶部的循环音效组决定「整首循环生成」和数字键所用的音效。音频工具的 USTX 样板也可以选择音效组。
+编排区按原句分组显示所有现用音效。打开仍引用已退役音效的旧草稿时，对应格子会改用当前音效。选择「仅试听」后，点按音效会播放原始样本。选择「编排」后，点按音效会替换选中格并选中下一格。工程顶部的循环音效组决定「整首循环生成」和数字键所用的音效。音频工具的 USTX 样板也可以选择音效组。
 
 
 音效组定义在 `sound-packs.json`。新增音效使用 `voicebanks/selected/` 的 WAV、FRQ 和 `oto.ini`，任务运行时把所需文件复制到自己的声库目录。需要从本机素材重建时，先构建 OpenUtau 原生 worker，再运行 `Vocal2Midi/python/python.exe -X utf8 backend/pipeline/prepare_phrase_voicebank.py`。

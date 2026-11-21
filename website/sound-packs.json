@@ -3,6 +3,13 @@
   "sourceAliases": {
     "clip_dai2_bag": "clip_dai2"
   },
+  "draftAliasReplacements": {
+    "clip_da": "clip_dai",
+    "clip_dai_daishuji": "clip_dai2_bag",
+    "clip_dai_yiduan": "clip_dai2",
+    "clip_ji_daishuji": "clip_ji2",
+    "clip_xiu": "clip_shu"
+  },
   "labels": {
     "ha": "哈",
     "ji": "基",
@@ -24,14 +31,10 @@
     "clip_shen": "兴",
     "clip_fen": "奋",
     "clip_jin": "剂",
-    "clip_dai_yiduan": "带",
     "clip_yi": "一",
     "clip_duan": "段",
     "clip_dai2_bag": "袋",
-    "clip_dai_daishuji": "袋",
     "clip_shu": "鼠",
-    "clip_ji_daishuji": "鸡",
-    "clip_xiu": "鼠",
     "clip_lou": "楼",
     "clip_shang": "上",
     "clip_de": "的",
@@ -61,7 +64,6 @@
     "clip_xia": "塞",
     "clip_yue": "悠",
     "clip_dai": "达",
-    "clip_da": "达",
     "clip_za": "咋",
     "clip_bu": "不"
   },
