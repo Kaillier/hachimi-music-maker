@@ -495,7 +495,7 @@ test('all active sounds stay visible while the selected pack keeps its exact nat
     assert.equal(html.match(/<img class="sound-family-art" src="([^"]+)"/)?.[1], '/images/' + id + '.png');
   for (const [, id, label] of pads.matchAll(/data-sound="([^"]+)">(.*?)<\/button>/g))
     assert.equal(label, '<strong>' + core.LABELS[id] + '</strong>');
-  assert.doesNotMatch(pads, /data-sound="clip_xiu"/);
+  assert.deepEqual(new Set([...renderedPacks.values()].flat()), new Set(core.SOUND_IDS));
   assert.equal(h.element('pack-render').disabled, false);
   await h.element('pack-render').listeners.click();
   const expected = [['clip_dai2_bag', 'clip_shu'], ['clip_ji2', 'clip_dai2_bag']];

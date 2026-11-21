@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SOUND_IDS, emptyDraft, restoreDraft, migrateDraft, repeatPattern, complete, nativePhrasePayload, nativeRenderPayload, isNativeRenderProject } from '../audio-core.js';
+import { emptyDraft, restoreDraft, migrateDraft, repeatPattern, complete, nativePhrasePayload, nativeRenderPayload, isNativeRenderProject } from '../audio-core.js';
 
 const project = {
   id: 'native-test',
@@ -35,17 +35,14 @@ test('regenerated score keeps matching edits and defaults suspected dialogue to 
   assert.equal(restoreDraft(next, migrated).deleted[0], false);
 });
 
-test('old draft sounds restore to current aliases before native rendering', () => {
-  const oldSounds = ['clip_da', 'clip_dai_daishuji', 'clip_dai_yiduan', 'clip_ji_daishuji', 'clip_xiu'];
-  const currentSounds = ['clip_dai', 'clip_dai2_bag', 'clip_dai2', 'clip_ji2', 'clip_shu'];
-  const score = { ...project, phrases: [{ id: 0, units: [0, 1, 2, 3, 4, 5] }] };
-  const saved = { ...emptyDraft(score), sequences: [[...oldSounds, 'clip_ding']], confirmed: [true] };
-  const restored = restoreDraft(score, saved);
-  assert.ok(oldSounds.every(sound => !SOUND_IDS.includes(sound)));
-  assert.deepEqual(nativeRenderPayload(score, restored).sequences, [[...currentSounds, 'clip_ding']]);
-  assert.equal(complete(score, restored), true);
-  assert.deepEqual(saved.sequences, [[...oldSounds, 'clip_ding']]);
+test('draft restoration only retains sounds in the current catalogue', () => {
+  const saved = { ...emptyDraft(project), sequences: [['clip_ding', 'unknown-sound'], ['mi']], confirmed: [true, true] };
+  const restored = restoreDraft(project, saved);
+  assert.deepEqual(restored.sequences, [['clip_ding', null], ['mi']]);
+  assert.deepEqual(restored.confirmed, [false, true]);
+  assert.equal(complete(project, restored), false);
 });
+
 test('native payloads preserve selected order, phrase index, and gains', () => {
   const draft = { ...emptyDraft(project), sequences: [['ha', 'bo'], ['man']], backingGain: .8, soundGain: .9 };
   assert.deepEqual(nativePhrasePayload(project, draft, 1), {
