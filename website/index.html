@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f5f4">
+  <meta name="description" content="逐句音效编排台。哈、基、米、曼、波，保留伴奏与旋律，导出自己的完整改编。">
+  <title>Hachimi 编排台</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/"><i data-lucide="audio-lines"></i> HACHIMI</a>
+    <nav class="page-nav" aria-label="页面">
+      <a href="/generate"><i data-lucide="file-plus-2"></i>生成工程</a>
+      <a href="/arrange" aria-current="page"><i data-lucide="list-music"></i>歌词编排</a>
+    </nav>
+  </header>
+  <main>
+    <div class="arrangement-toolbar">
+      <label class="song-picker"><span>歌曲工程</span><select id="song-select" aria-label="选择歌曲工程" disabled><option>载入中…</option></select></label>
+      <span id="status" class="muted" role="status" aria-live="polite">载入音频工程…</span>
+      <button id="reset" class="icon" title="清空全部编排" aria-label="清空全部编排" disabled><i data-lucide="rotate-ccw"></i></button>
+    </div>
+    <section id="empty-state" hidden><h1>暂无歌曲工程</h1><a class="action-link" href="/generate"><i data-lucide="file-plus-2"></i>生成工程</a></section>
+    <div class="error" id="error" role="alert" hidden></div>
+    <div id="studio" hidden>
+    <section class="song-heading">
+      <div>
+        <p class="eyebrow">01 / 当前工程</p><h1 id="song-title">载入中<span id="song-subtitle"></span></h1><p id="song-artist" class="muted"></p>
+        <div class="source-links">
+          <a id="source-score"><i data-lucide="file-music"></i>USTX 工程</a>
+          <a id="source-vocals" target="_blank" rel="noopener"><i data-lucide="mic-vocal"></i>纯人声</a>
+          <div class="project-loop-controls">
+            <label class="sound-pack-field" for="sound-pack">循环音效组 <select id="sound-pack" disabled></select></label>
+            <button id="pack-render" type="button" title="用所选音效组替换整首编排并导出 WAV" disabled><i data-lucide="repeat-2" aria-hidden="true"></i>整首循环生成</button>
+          </div>
+        </div>
+      </div>
+      <div class="song-meta"><strong id="total-time">02:10</strong><span id="analysis-summary">人声编排段分析</span></div>
+    </section>
+    <section class="overview" aria-label="全曲波形"><canvas id="waveform" aria-label="原曲真实振幅与当前编排段范围"></canvas><div class="time-ruler"><span>00:00</span><span id="middle-time">01:05</span><span id="end-time">02:10</span></div></section>
+    <div class="workspace">
+      <aside class="phrase-nav"><div class="section-label"><h2>编排段</h2><span id="completed">0 / 0</span></div><progress id="progress" value="0" max="1"></progress><nav id="phrases" aria-label="编排段列表"></nav><button id="show-deleted-phrases" class="subtle" type="button" hidden><i data-lucide="archive-restore" aria-hidden="true"></i><span id="deleted-phrase-count">已删除</span></button></aside>
+      <div class="editor">
+        <p id="empty-phrases" class="muted" hidden>没有待编排的段落</p>
+        <section id="active-phrase" class="phrase-section">
+          <div class="section-label"><div><p class="eyebrow" id="phrase-range">--:-- / --:--</p><h2 id="phrase-title" tabindex="-1">第 01 段</h2></div><div class="phrase-header-actions"><button id="edit-phrase" class="icon" type="button" title="编辑编排段" aria-label="编辑编排段" disabled><i data-lucide="pencil"></i></button><button id="delete-phrase" class="subtle phrase-delete-button" type="button" title="删除本段" aria-label="删除本段" disabled><i data-lucide="trash-2" aria-hidden="true"></i><span>删除本段</span></button><span class="badge" id="phase">待载入</span></div></div>
+          <div class="next-row"><button id="previous" class="icon" title="上一段" aria-label="上一段" disabled><i data-lucide="arrow-left" aria-hidden="true"></i></button><p id="draft-status" class="muted">准备中</p><button id="confirm" class="primary" disabled>确认并听下一段<i data-lucide="arrow-right" aria-hidden="true"></i></button></div>
+          <div class="transport">
+            <button id="original" disabled><i data-lucide="play"></i>原段</button><button id="preview" disabled><i data-lucide="headphones"></i>改编试听</button><button id="stop" class="icon" title="停止播放" aria-label="停止播放" disabled><i data-lucide="square"></i></button><output id="play-time">00:00</output>
+            <label class="check phrase-autoplay"><input id="phrase-autoplay" type="checkbox" checked>切换段落时播放原段</label>
+          </div>
+          <div class="section-label sequence-heading"><h3>音效顺序</h3><span id="slot-count">0 / 0</span></div>
+          <div id="slots" class="slots" aria-label="本段音效序列"></div>
+          <div class="edit-tools"><button id="undo" class="icon" title="撤销本段修改" aria-label="撤销本段修改" disabled><i data-lucide="undo-2"></i></button><button id="remove" class="icon" title="删除选中音效" aria-label="删除选中音效" disabled><i data-lucide="delete"></i></button><button id="clear" class="icon" title="清空本段" aria-label="清空本段" disabled><i data-lucide="trash-2"></i></button><button id="repeat" class="subtle" title="将已输入的音效顺序循环填满本段" disabled><i data-lucide="repeat-2"></i>循环填满</button></div>
+        </section>
+        <section id="phrase-sounds" class="sound-section">
+          <div class="section-label sound-toolbar">
+            <h3>全部音效</h3>
+            <div class="sound-actions">
+              <fieldset class="sound-mode" aria-label="音效按钮模式">
+                <label><input id="sound-mode-edit" name="sound-mode" type="radio" checked><span><i data-lucide="list-music"></i>编排</span></label>
+                <label><input id="sound-mode-audition" name="sound-mode" type="radio"><span><i data-lucide="headphones"></i>仅试听</span></label>
+              </fieldset>
+              <label class="check"><input id="audition" type="checkbox" checked>替换时播放</label>
+            </div>
+          </div>
+          <div id="sounds" class="sound-library" role="group" aria-label="全部音效"></div>
+        </section>
+        <section class="mix-section"><label>伴奏 <input id="backing-gain" type="range" min="0" max="1.5" step="0.05" value="1"><output id="backing-value">100%</output></label><label>音效 <input id="sound-gain" type="range" min="0" max="1.5" step="0.05" value="1"><output id="sound-value">100%</output></label></section>
+      </div>
+    </div>
+    <section class="export-section"><div><h2>完整改编</h2><p id="export-status" class="muted">0 / 0 段已确认</p></div><div class="export-actions"><button id="full-play" disabled><i data-lucide="headphones"></i>整首试听</button><button id="export" class="primary" disabled><i data-lucide="download"></i>导出 WAV</button></div></section>
+    </div>
+  </main>
+  <dialog id="edit-phrase-dialog" aria-labelledby="edit-phrase-title">
+    <form id="edit-phrase-form">
+      <h2 id="edit-phrase-title">编辑编排段</h2>
+      <label class="phrase-text-field" for="edit-phrase-lyrics">显示歌词<textarea id="edit-phrase-lyrics" maxlength="500" rows="2"></textarea></label>
+      <fieldset class="edit-phrase-mask">
+        <legend>保留原声的单元</legend>
+        <div class="edit-phrase-actions">
+          <button id="keep-phrase" type="button"><i data-lucide="mic-vocal"></i>整段保留原声</button>
+          <button id="restore-phrase" type="button"><i data-lucide="rotate-ccw"></i>整段参与编排</button>
+        </div>
+        <div id="edit-phrase-units" class="edit-phrase-units"></div>
+      </fieldset>
+      <div class="dialog-actions"><button id="cancel-edit-phrase" type="button">取消</button><button class="primary" type="submit"><i data-lucide="check"></i>保存</button></div>
+    </form>
+  </dialog>
+  <dialog id="delete-phrase-dialog" aria-labelledby="delete-phrase-title" aria-describedby="delete-phrase-info">
+    <h2 id="delete-phrase-title">删除编排段？</h2>
+    <p id="delete-phrase-target"></p>
+    <p id="delete-phrase-info">从编排列表移除此段，成品保留该段原声。可以在「已删除」里恢复。</p>
+    <form method="dialog"><button value="cancel" autofocus>取消</button><button value="delete" class="danger"><i data-lucide="trash-2" aria-hidden="true"></i>删除</button></form>
+  </dialog>
+  <dialog id="deleted-phrases-dialog" aria-labelledby="deleted-phrases-title">
+    <h2 id="deleted-phrases-title">已删除的编排段</h2>
+    <ul id="deleted-phrase-list"></ul>
+    <form method="dialog"><button>关闭</button></form>
+  </dialog>
+  <dialog id="reset-dialog"><h2>清空全部编排？</h2><p>这会清空音效选择和歌词修改，并恢复工程默认的段落显示。</p><form method="dialog"><button value="cancel">保留</button><button value="reset" class="danger">清空</button></form></dialog>
+  <script src="/vendor/lucide.js"></script>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

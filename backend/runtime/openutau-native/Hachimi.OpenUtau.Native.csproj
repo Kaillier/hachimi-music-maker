@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <Platforms>AnyCPU</Platforms>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <OpenUtauNativeDir>$(MSBuildThisFileDirectory)..\openutau-source\runtimes\win-x64\native</OpenUtauNativeDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\openutau-source\OpenUtau.Core\OpenUtau.Core.csproj" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="$(OpenUtauNativeDir)\worldline.dll" Link="worldline.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

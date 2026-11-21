@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f5f4">
+  <meta name="description" content="逐句音效编排台。哈、基、米、曼、波，保留伴奏与旋律，导出自己的完整改编。">
+  <title>Hachimi 编排台</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .song-picker{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.8125rem;white-space:nowrap}
+    .song-picker select,.note-picker select,.pitch-picker select,.timing-picker select{min-width:180px;max-width:260px;height:38px;padding:0 30px 0 10px;border:1px solid var(--line);border-radius:5px;background:#fff;color:var(--ink);font:inherit}
+    .note-picker,.pitch-picker,.timing-picker{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.8125rem;white-space:nowrap}
+    .topbar{flex-wrap:wrap}.song-picker,.note-picker,.pitch-picker,.timing-picker{max-width:100%}.top-actions{flex-wrap:wrap}
+    @media (max-width:700px){.song-picker,.note-picker,.pitch-picker,.timing-picker{order:3;width:100%}.song-picker select,.note-picker select,.pitch-picker select,.timing-picker select{flex:1;max-width:none}.topbar{flex-wrap:wrap}.top-actions{order:2;margin-left:auto}.topbar #status{order:4}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./"><i data-lucide="audio-lines"></i> HACHIMI <span>编排台</span></a>
+    <label class="song-picker"><span>歌曲</span><select id="song-select" aria-label="选择歌曲" disabled><option>载入中…</option></select></label>
+    <label class="note-picker"><span>音符模式</span><select id="note-mode" aria-label="选择音符模式" disabled><option>载入中…</option></select></label>
+    <label class="timing-picker"><span>时序模式</span><select id="timing-mode" aria-label="选择音符时序模式" disabled><option>载入中…</option></select></label>
+    <label class="pitch-picker"><span>音高模式</span><select id="pitch-mode" aria-label="选择音高提取模式" disabled><option>载入中…</option></select></label>
+    <div class="top-actions"><button id="audio-tools-open" title="提取人声或使用 USTX 生成样板"><i data-lucide="audio-waveform"></i>音频工具</button><button id="upload-open" title="上传歌曲和歌词并生成新工程"><i data-lucide="upload"></i>导入歌曲</button><button id="manbo" class="primary" title="用哈、基、米、曼、波循环填充并生成完整 WAV" disabled><i data-lucide="wand-sparkles"></i>哈基米曼波</button></div>
+    <span id="status" role="status" aria-live="polite">载入音频工程…</span>
+    <button id="reset" class="icon" title="清空全部编排" aria-label="清空全部编排" disabled><i data-lucide="rotate-ccw"></i></button>
+  </header>
+  <main>
+    <section class="song-heading">
+      <div><p class="eyebrow">01 / 当前工程</p><h1 id="song-title">琵琶曲<span id="song-subtitle">（东船与西舫）</span></h1><p id="song-artist" class="muted">郑浩 Z-Hao / 冰洁</p></div>
+      <div class="song-meta"><strong id="total-time">02:10</strong><span id="analysis-summary">人声乐句分析</span></div>
+    </section>
+    <div class="error" id="error" role="alert" hidden></div>
+    <section class="overview" aria-label="全曲波形"><canvas id="waveform" aria-label="原曲真实振幅与当前乐句范围"></canvas><div class="time-ruler"><span>00:00</span><span id="middle-time">01:05</span><span id="end-time">02:10</span></div></section>
+    <div class="workspace">
+      <aside class="phrase-nav"><div class="section-label"><h2>乐句</h2><span id="completed">0 / 0</span></div><progress id="progress" value="0" max="0"></progress><nav id="phrases" aria-label="乐句列表"></nav></aside>
+      <div class="editor">
+        <section class="phrase-section">
+          <div class="section-label"><div><p class="eyebrow" id="phrase-range">--:-- / --:--</p><h2 id="phrase-title">第 01 句</h2></div><span class="badge" id="phase">待载入</span></div>
+          <div class="transport"><button id="original" disabled><i data-lucide="play"></i>原句</button><button id="preview" disabled><i data-lucide="headphones"></i>改编试听</button><button id="stop" class="icon" title="停止播放" aria-label="停止播放" disabled><i data-lucide="square"></i></button><output id="play-time">00:00</output></div>
+          <div class="section-label sequence-heading"><h3>音效顺序</h3><span id="slot-count">0 / 0</span></div>
+          <div id="slots" class="slots" aria-label="本句音效序列"></div>
+          <div class="edit-tools"><button id="undo" class="icon" title="撤销本句修改" aria-label="撤销本句修改" disabled><i data-lucide="undo-2"></i></button><button id="remove" class="icon" title="删除选中音效" aria-label="删除选中音效" disabled><i data-lucide="delete"></i></button><button id="clear" class="icon" title="清空本句" aria-label="清空本句" disabled><i data-lucide="trash-2"></i></button><button id="repeat" class="subtle" title="将已输入的音效顺序循环填满本句" disabled><i data-lucide="repeat-2"></i>循环填满</button></div>
+        </section>
+        <section class="sound-section"><div class="section-label"><h3>音效</h3><label class="check"><input id="audition" type="checkbox" checked>按键试听</label></div><div id="sounds" class="sound-grid"></div></section>
+        <section class="mix-section"><label>伴奏 <input id="backing-gain" type="range" min="0" max="1.5" step="0.05" value="1"><output id="backing-value">100%</output></label><label>音效 <input id="sound-gain" type="range" min="0" max="1.5" step="0.05" value="1"><output id="sound-value">100%</output></label></section>
+        <div class="next-row"><button id="previous" class="icon" title="上一句" aria-label="上一句" disabled><i data-lucide="arrow-left"></i></button><p id="draft-status" class="muted">准备中</p><button id="confirm" class="primary" disabled>确认并听下一句<i data-lucide="arrow-right"></i></button></div>
+      </div>
+    </div>
+    <section class="export-section"><div><h2>完整改编</h2><p id="export-status" class="muted">0 / 0 句已确认</p></div><div class="export-actions"><button id="full-play" disabled><i data-lucide="headphones"></i>整首试听</button><button id="export" class="primary" disabled><i data-lucide="download"></i>导出 WAV</button></div></section>
+    <footer><span id="segmentation-method">GAME 音符优先 · LDDC 连音归组</span><span>Demucs / GAME / ROSVOT / RMVPE / FCPE / OpenUtau</span><span>44.1 kHz · 立体声</span></footer>
+  </main>
+  <dialog id="audio-tools-dialog" class="audio-tools-dialog" aria-labelledby="audio-tools-title">
+    <div class="section-label"><h2 id="audio-tools-title">本地音频工具</h2><button id="audio-tools-close" class="icon" type="button" title="关闭" aria-label="关闭音频工具"><i data-lucide="x"></i></button></div>
+    <div class="tool-tabs" role="tablist" aria-label="音频工具">
+      <button id="separate-tab" type="button" role="tab" aria-selected="true" aria-controls="separate-panel"><i data-lucide="mic-vocal"></i>提取人声</button>
+      <button id="ustx-tab" type="button" role="tab" aria-selected="false" aria-controls="ustx-panel" tabindex="-1"><i data-lucide="file-music"></i>USTX 样板</button>
+    </div>
+    <section id="separate-panel" role="tabpanel" aria-labelledby="separate-tab">
+      <form id="separate-form" class="audio-tool-form">
+        <label class="file-picker">歌曲文件<input id="separate-song" name="song" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.wma" required></label>
+        <div class="dialog-actions"><button id="separate-submit" class="primary" type="submit"><i data-lucide="split"></i>提取人声与伴奏</button></div>
+      </form>
+    </section>
+    <section id="ustx-panel" role="tabpanel" aria-labelledby="ustx-tab" hidden>
+      <form id="ustx-form" class="audio-tool-form">
+        <label class="file-picker">USTX 工程<input id="ustx-file" name="score" type="file" accept=".ustx" required></label>
+        <label class="file-picker">对应伴奏<select id="ustx-backing-source" name="backingSource" required><option value="">请选择伴奏</option><option value="file">上传伴奏文件</option></select></label>
+        <label id="ustx-backing-picker" class="file-picker" hidden>伴奏文件<input id="ustx-backing-file" name="backing" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.wma"></label>
+        <div class="dialog-actions"><button id="ustx-submit" class="primary" type="submit"><i data-lucide="wand-sparkles"></i>生成哈基米曼波样板</button></div>
+      </form>
+    </section>
+    <p id="audio-tool-status" class="muted" role="status" aria-live="polite"></p>
+    <div id="audio-tool-error" class="error" role="alert" hidden></div>
+    <section class="audio-task-section" aria-labelledby="audio-task-title"><h3 id="audio-task-title">最近任务</h3><ul id="audio-task-list" class="audio-task-list"></ul></section>
+  </dialog>
+  <dialog id="project-dialog"><form id="project-form" class="upload-form"><h2>导入歌曲工程</h2><p class="muted">上传歌曲和歌词后，本机会运行当前的 Demucs、GAME、ROSVOT、RMVPE、FCPE 和 OpenUtau 工程生成流程。</p><label class="file-picker">歌曲文件<input id="upload-song" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.wma" required></label><label class="file-picker">歌词文件<input id="upload-lyrics" type="file" accept=".lrc,.txt,.jsonl,text/plain" required></label><output id="upload-status" class="muted" role="status" aria-live="polite"></output><div class="dialog-actions"><button id="upload-cancel" type="button">取消</button><button id="upload-submit" class="primary" type="submit">生成工程</button></div></form></dialog>
+  <dialog id="reset-dialog"><h2>清空全部编排？</h2><p>这会移除所有乐句的音效选择和本机草稿。</p><form method="dialog"><button value="cancel">保留</button><button value="reset" class="danger">清空</button></form></dialog>
+  <script src="vendor/lucide.js"></script>
+  <script type="module" src="app.js"></script>
+  <script type="module" src="audio-tools.js"></script>
+</body>
+</html>

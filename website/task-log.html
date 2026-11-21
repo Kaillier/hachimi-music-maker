@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f5f4">
+  <title>任务日志 | Hachimi</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/"><i data-lucide="audio-lines" aria-hidden="true"></i> HACHIMI</a>
+    <nav class="page-nav" aria-label="页面">
+      <a href="/generate">生成记录</a>
+    </nav>
+  </header>
+  <main class="task-log-page">
+    <div class="task-log-heading">
+      <div>
+        <h1 id="log-title">任务日志</h1>
+        <p id="log-status" role="status">正在读取任务状态…</p>
+      </div>
+      <a class="action-link" id="log-download" hidden>下载日志</a>
+    </div>
+    <pre class="task-log-output" id="log-output" tabindex="0" role="region" aria-label="任务输出">正在读取日志…</pre>
+  </main>
+  <script src="/vendor/lucide.js"></script>
+  <script type="module" src="/task-log.js"></script>
+</body>
+</html>

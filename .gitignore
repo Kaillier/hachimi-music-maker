@@ -1,0 +1,94 @@
+# Operating systems and editors
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.iml
+
+# Local configuration and credentials
+local.properties
+*.local
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+
+# Android / Gradle
+.gradle/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# Python environments and generated metadata
+**/.venv/
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+dist/
+site/
+
+# Runtime jobs, models, checkpoints and downloaded tools
+/backend/runtime/*
+!/backend/runtime/openutau-native/
+/backend/runtime/openutau-native/*
+!/backend/runtime/openutau-native/Hachimi.OpenUtau.Native.csproj
+!/backend/runtime/openutau-native/Program.cs
+/projects/**
+!/projects/.gitkeep
+**/downloads/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.safetensors
+*.tflite
+*.engine
+
+# User-provided songs, lyrics and target samples
+/Vocal2Midi/
+/哈基米音源/
+/哈基米utau音源*.zip
+/vocals*.ustx
+/music/**
+!/music/.gitkeep
+/audio/**
+!/audio/.gitkeep
+/voicebanks/
+
+# Generated audio, logs and temporary files
+*.log
+*.tmp
+*.temp
+*.part
+
+# Local Python / test caches that may appear at repository root
+.cache/
+.python-version
+
+# Local model settings and working materials
+/website/.openai/
+/legacy-archive/cleanup-manifest.json
+/legacy-archive/cleanup-legacy.ps1
+/config.json
+/哈基米pv素材/
+/片段筛选/
